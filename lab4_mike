@@ -1,0 +1,81 @@
+//NOTE - THIS IS INCOMPLETE. ONLY FUNCTION AND STRUCT IS USEFUL.
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+
+#define M 2400
+#define P 2000
+#define N 500
+
+typedef struct args{
+
+	int a[M][P];
+	int b[P][N];
+	int c[M][N];
+	int start_row;
+	int increment;
+
+};
+
+//Multiplies section of array according to the number of threads
+void *section_array(void *param){
+
+	int i, j, k;
+
+	//Initialize arguments into thread
+	args *info;
+	info = (args *) param;
+
+	//Calculate section of array based on number of threads
+	//Loop rows of resulting array
+	for (i = info->start_row; i < info->start_row + info->increment; i++){
+
+		//Calulates each column of the row
+		for (j = 0; j < N; j++){
+
+			info->c[i][j] = 0;
+
+			//Array multiplication
+			for (k = 0; k < P; k++){
+
+				info->c[i][j] += info->a[i][k] * info->b[k][j];
+
+			}
+
+		}
+
+	}
+
+}
+
+int main(void){
+	
+	//int a[M][P], b[P][N], c[M][N];
+	int thread_count = 1, i; 
+	clock_t start, diff;  //use clock() function
+	args *info = (args *) malloc(sizeof(args));
+
+	pthread_t thread;
+	pthread_attr_t attr_thread;
+
+	pthread_attr_init(&attr_thread);
+
+	//while (thread_count <= 6){
+
+		info->start_row = 0;
+		info->increment = 2400 / thread_count;
+		start = clock(); //try to use gettimeofday
+		for (i = 0; i < thread_count; i++){
+
+			pthread_create(&thread, &attr_thread, section_array, (void *) info);
+			info->start_row += info->increment;
+
+		}	
+		diff = clock() - start;
+		printf("%f", diff);
+
+	//}
+	
+	return 0;
+}
