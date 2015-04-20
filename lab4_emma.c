@@ -55,9 +55,6 @@ void *section_array(void *param){
 }
 
 int main(int argc, char *argv[]){
-//int a[N][M]={0};
-//int b[M][P]={0};
-//int c[N][P]={0};
 int i=0;
 int j=0;
 int k=0;
@@ -89,23 +86,23 @@ int endColumn;
 	
 	//run without threads
 
+	printf("%d\n", threadNumber);
+	i=1;
+	for(i=1; i<=threadNumber; i++){
 		//start timer
-		i=0;
-		printf("%d\n", threadNumber);
-		int difference=n/threadNumber;
-for(i=0; i<threadNumber; i++){
-printf("%d\n",i);
+		int difference=N/i;
+		printf("%d\n",i);
 		for(j=0; j<i; j++){
 			startColumn=difference*j;
 			endColumn=startColumn+difference-1;
 			printf("Start: %d End: %d \n", startColumn, endColumn);
 			//create thread
 			//pass arrays and start/end numbers
-			//destroy thread
 
 		}
-}
 		//end timer
 		//print results
+	}
+
 
 }
