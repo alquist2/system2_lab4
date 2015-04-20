@@ -8,7 +8,7 @@
 #define P 2000
 #define N 500
 
-typedef struct args{
+typedef struct {
 
 	int a[M][P];
 	int b[P][N];
@@ -16,7 +16,12 @@ typedef struct args{
 	int start_row;
 	int increment;
 
-};
+}args;
+
+typedef struct {
+	long sec;
+	suseconds_t micro;
+}timeval;
 
 //Multiplies section of array according to the number of threads
 void *section_array(void *param){
@@ -51,31 +56,45 @@ void *section_array(void *param){
 
 int main(void){
 	
-	//int a[M][P], b[P][N], c[M][N];
-	int thread_count = 1, i; 
-	clock_t start, diff;  //use clock() function
+	int thread_count = 1, i, j, k; 
+	long start, diff;  //use clock() function
+	timeval *time = (timeval *) malloc(sizeof(timeval));
 	args *info = (args *) malloc(sizeof(args));
+
+	//Initialize a and b
+	for (j = 0; j < M; j++){
+		for (k = 0; k < P; k++){
+			info->a[j][k] = k - j + 2;
+		}
+	}
+	for (j = 0; j < P; j++){
+		for (k = 0; k < N; k++){
+			info->b[j][k] = j - k + 1;
+		}
+	}
+
+	printf("Arrays initialized\n");
 
 	pthread_t thread;
 	pthread_attr_t attr_thread;
-
 	pthread_attr_init(&attr_thread);
 
-	//while (thread_count <= 6){
-
-		info->start_row = 0;
-		info->increment = 2400 / thread_count;
-		start = clock(); //try to use gettimeofday
-		for (i = 0; i < thread_count; i++){
-
-			pthread_create(&thread, &attr_thread, section_array, (void *) info);
-			info->start_row += info->increment;
-
-		}	
-		diff = clock() - start;
-		printf("%f", diff);
-
-	//}
+	info->start_row = 0;
+	info->increment = 2400 / thread_count;
 	
+	//start = clock(); //try to use gettimeofday
+	gettimeofday(time, NULL);
+	start = time->sec;
+
+	pthread_create(&thread, &attr_thread, section_array, (void *) info);
+	//pthread_join() allows the thread to execute before advancing
+	pthread_join(thread, NULL);
+	gettimeofday(time, NULL);
+	diff = time->sec - start;
+	
+	printf("%lu", diff);
+
+	//TODO - add multiple threads
+
 	return 0;
 }
