@@ -1,6 +1,6 @@
-//NOTE - THIS IS INCOMPLETE. ONLY FUNCTION AND STRUCT IS USEFUL.
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 #include <time.h>
 
@@ -14,7 +14,7 @@ typedef struct {
 	int b[P][N];
 	int c[M][N];
 	int start_row;
-	int increment;
+	int end_row;
 
 }args;
 
@@ -34,7 +34,7 @@ void *section_array(void *param){
 
 	//Calculate section of array based on number of threads
 	//Loop rows of resulting array
-	for (i = info->start_row; i < info->start_row + info->increment; i++){
+	for (i = info->start_row; i < info->end_row; i++){
 
 		//Calulates each column of the row
 		for (j = 0; j < N; j++){
@@ -51,12 +51,14 @@ void *section_array(void *param){
 		}
 
 	}
-
 }
 
-int main(void){
+int main(int argc, char *argv[]){
 	
 	int thread_count = 1, i, j, k; 
+	int max_threads = argv[1][0] - '0';
+	int increment;
+	int comp[M][N];
 	long start, diff;  //use clock() function
 	timeval *time = (timeval *) malloc(sizeof(timeval));
 	args *info = (args *) malloc(sizeof(args));
@@ -73,28 +75,81 @@ int main(void){
 		}
 	}
 
-	printf("Arrays initialized\n");
-
-	pthread_t thread;
-	pthread_attr_t attr_thread;
-	pthread_attr_init(&attr_thread);
+	pthread_t thread[6];
+	pthread_attr_t attr_thread[6];
+	pthread_attr_init(&attr_thread[0]);
 
 	info->start_row = 0;
-	info->increment = 2400 / thread_count;
+	info->end_row = 2400;
 	
-	//start = clock(); //try to use gettimeofday
 	gettimeofday(time, NULL);
 	start = time->sec;
 
-	pthread_create(&thread, &attr_thread, section_array, (void *) info);
-	//pthread_join() allows the thread to execute before advancing
-	pthread_join(thread, NULL);
+	printf("Threads\t\tSeconds\n");
+
+	//Run array multiplication with one thread
+	pthread_create(&thread[0], &attr_thread[0], section_array, (void *) info);
+	pthread_join(thread[0], NULL);
 	gettimeofday(time, NULL);
 	diff = time->sec - start;
-	
-	printf("%lu", diff);
+	printf("%d\t\t%lu\n", thread_count, diff);
+	thread_count++;
 
-	//TODO - add multiple threads
+	//Save 1-thread array into global variable
+	for (j = 0; j < M; j++){
+		for (k = 0; k < N; k++){
+			comp[j][k] = info->c[j][k];
+		}
+	}
+
+	/*for (j = 0; j < 20; j++){
+		printf("%d ", info->c[0][j]);
+	}*/
+	
+	//Run array multiplication starting with 2 threads, then up to x threads (6 max)
+	while (thread_count <= max_threads){
+		int boolean = 0;
+		info->start_row = 0;
+		increment = 2400 / thread_count;	
+
+		pthread_attr_init(&attr_thread[thread_count - 1]);
+		gettimeofday(time, NULL);
+		start = time->sec;
+		for (i = 0; i < thread_count; i++){
+			info->end_row = info->start_row + increment;
+			pthread_create(&thread[i], &attr_thread[i], section_array, (void *) info);
+			info->start_row = info->end_row;
+		}
+		for (i = 0; i < thread_count; i++){
+			pthread_join(thread[i], NULL);
+		}
+		gettimeofday(time, NULL);
+		diff = time->sec - start;
+		
+		printf("%d\t\t%lu\t", thread_count, diff);
+		thread_count++;
+
+		/*for (j = 0; j < 20; j++){
+			printf("%d ", info->c[0][j]);
+		}*/
+
+		//Compare results to global array
+		for (j = 0; j < M; j++){
+			for (k = 0; k < N; k++){
+				if (comp[j][k] != info->c[j][k]){
+					boolean = 1;
+					break;
+				}
+			}
+		}
+
+		if (boolean == 0){
+			printf("No error\n");
+		} else {
+			printf("Error\n");
+		}
+
+	}
 
 	return 0;
 }
