@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/time.h>
 #include <time.h>
 
 #define M 2400
@@ -10,9 +11,9 @@
 
 typedef struct {
 
-	int a[M][P];
-	int b[P][N];
-	int c[M][N];
+	long a[M][P];
+	long b[P][N];
+	long c[M][N];
 	int start_row;
 	int end_row;
 
@@ -20,7 +21,7 @@ typedef struct {
 
 typedef struct {
 	long sec;
-	suseconds_t micro;
+	long micro;
 }timeval;
 
 //Multiplies section of array according to the number of threads
@@ -58,20 +59,21 @@ int main(int argc, char *argv[]){
 	int thread_count = 1, i, j, k; 
 	int max_threads = argv[1][0] - '0';
 	int increment;
-	int comp[M][N];
-	long start, diff;  //use clock() function
-	timeval *time = (timeval *) malloc(sizeof(timeval));
+	long comp[M][N];
+	double diff;
+	timeval *start = (timeval *)malloc(sizeof(timeval));
+	timeval *finish = (timeval *)malloc(sizeof(timeval));
 	args *info = (args *) malloc(sizeof(args));
 
 	//Initialize a and b
 	for (j = 0; j < M; j++){
 		for (k = 0; k < P; k++){
-			info->a[j][k] = k - j + 2;
+			info->a[j][k] = (long)(k - j + 2);
 		}
 	}
 	for (j = 0; j < P; j++){
 		for (k = 0; k < N; k++){
-			info->b[j][k] = j - k + 1;
+			info->b[j][k] = (long)(j - k + 1);
 		}
 	}
 
@@ -82,17 +84,17 @@ int main(int argc, char *argv[]){
 	info->start_row = 0;
 	info->end_row = 2400;
 	
-	gettimeofday(time, NULL);
-	start = time->sec;
+	gettimeofday(start, NULL);
+	//start = time->micro;
 
 	printf("Threads\t\tSeconds\n");
 
 	//Run array multiplication with one thread
 	pthread_create(&thread[0], &attr_thread[0], section_array, (void *) info);
 	pthread_join(thread[0], NULL);
-	gettimeofday(time, NULL);
-	diff = time->sec - start;
-	printf("%d\t\t%lu\n", thread_count, diff);
+	gettimeofday(finish, NULL);
+	diff = (finish->sec - start->sec) + ((finish->micro - start->micro)/1000000.0);
+	printf("%d\t\t%f\n", thread_count, diff);
 	thread_count++;
 
 	//Save 1-thread array into global variable
@@ -102,8 +104,8 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-	/*for (j = 0; j < 20; j++){
-		printf("%d ", info->c[0][j]);
+	/*for (j = 2380; j < 2400; j++){
+		printf("%lu ", info->c[j][498]);
 	}*/
 	
 	//Run array multiplication starting with 2 threads, then up to x threads (6 max)
@@ -113,8 +115,7 @@ int main(int argc, char *argv[]){
 		increment = 2400 / thread_count;	
 
 		pthread_attr_init(&attr_thread[thread_count - 1]);
-		gettimeofday(time, NULL);
-		start = time->sec;
+		gettimeofday(start, NULL);
 		for (i = 0; i < thread_count; i++){
 			info->end_row = info->start_row + increment;
 			pthread_create(&thread[i], &attr_thread[i], section_array, (void *) info);
@@ -123,14 +124,14 @@ int main(int argc, char *argv[]){
 		for (i = 0; i < thread_count; i++){
 			pthread_join(thread[i], NULL);
 		}
-		gettimeofday(time, NULL);
-		diff = time->sec - start;
+		gettimeofday(finish, NULL);
+		diff = (finish->sec - start->sec) + ((finish->micro - start->micro)/1000000.0);
 		
-		printf("%d\t\t%lu\t", thread_count, diff);
+		printf("%d\t\t%f\t", thread_count, diff);
 		thread_count++;
 
-		/*for (j = 0; j < 20; j++){
-			printf("%d ", info->c[0][j]);
+		/*for (j = 2380; j < 2400; j++){
+			printf("%lu ", info->c[j][498]);
 		}*/
 
 		//Compare results to global array
